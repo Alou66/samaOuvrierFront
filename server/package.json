@@ -1,0 +1,16 @@
+{
+  "name": "sama-ouvrier-server",
+  "version": "1.0.0",
+  "description": "JSON Server backend for Sama-Ouvrier",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "json-server": "0.17.4"
+  }
+}
