@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /home/marrwane/Téléchargements/Sama-Ouvrier/frontend/src/mock /home/marrwane/Téléchargements/Sama-Ouvrier/frontend/src/services)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node -e ' *)",
+      "Bash(cp /home/marrwane/Téléchargements/Sama-Ouvrier/frontend/db.json /home/marrwane/Téléchargements/Sama-Ouvrier/server/db.json)"
+    ],
+    "additionalDirectories": [
+      "/home/marrwane/Téléchargements/Sama-Ouvrier/frontend/src",
+      "/home/marrwane/Téléchargements/Sama-Ouvrier/server"
+    ]
+  }
+}

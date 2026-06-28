@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #eaf6ee;
+  --color-primary-100: #cce9d6;
+  --color-primary-200: #99d3ad;
+  --color-primary-500: #16803c;
+  --color-primary-600: #0f6b32;
+  --color-primary-700: #0d5429;
+
+  --color-sand-50: #fbf7ee;
+  --color-sand-100: #f3e9d2;
+
+  --color-baobab-600: #2f6b46;
+  --color-baobab-700: #234f34;
+}
+
+:root {
+  color-scheme: light;
+  font: 16px/1.55 'Segoe UI', system-ui, Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
