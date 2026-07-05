@@ -1,18 +1,19 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { TripProvider } from './context/TripContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import ClientDashboard from './pages/client/ClientDashboard'
 import Recherche from './pages/Recherche'
 import WorkerProfile from './pages/WorkerProfile'
 import RequestIntervention from './pages/RequestIntervention'
 import Account from './pages/Account'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ClientDashboard from './pages/client/ClientDashboard'
 import ClientRequests from './pages/client/ClientRequests'
 import NewRequest from './pages/client/NewRequest'
 import WorkerDashboard from './pages/worker/WorkerDashboard'
+import WorkerMissions from './pages/worker/WorkerMissions'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
 export default function App() {
@@ -23,42 +24,62 @@ export default function App() {
           <Routes>
 
             {/* ── Pages auth — sans sidebar ──────────────────────────────── */}
-            <Route path="/connexion" element={<Login />} />
+            <Route path="/connexion"  element={<Login />} />
             <Route path="/inscription" element={<Register />} />
+
+            {/* ── Pages publiques sans sidebar ───────────────────────────── */}
+            <Route path="/nouvelle-demande" element={<NewRequest />} />
 
             {/* ── Pages app — avec sidebar ───────────────────────────────── */}
             <Route element={<Layout />}>
 
-              {/* Protégées : redirigent vers /connexion si non connecté */}
+              {/* CLIENT */}
               <Route
                 index
-                element={<ProtectedRoute><ClientDashboard /></ProtectedRoute>}
+                element={<ProtectedRoute allowedRoles={['CLIENT']}><ClientDashboard /></ProtectedRoute>}
               />
               <Route
                 path="demandes"
-                element={<ProtectedRoute><ClientRequests /></ProtectedRoute>}
+                element={<ProtectedRoute allowedRoles={['CLIENT']}><ClientRequests /></ProtectedRoute>}
               />
-              <Route path="nouvelle-demande" element={<NewRequest />} />
               <Route
                 path="ouvrier/:id/demande"
-                element={<ProtectedRoute><RequestIntervention /></ProtectedRoute>}
+                element={<ProtectedRoute allowedRoles={['CLIENT']}><RequestIntervention /></ProtectedRoute>}
               />
+
+              {/* WORKER */}
               <Route
                 path="ouvrier/dashboard"
-                element={<ProtectedRoute><WorkerDashboard /></ProtectedRoute>}
+                element={<ProtectedRoute allowedRoles={['WORKER']}><WorkerDashboard /></ProtectedRoute>}
               />
               <Route
-                path="admin"
-                element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>}
+                path="ouvrier/missions"
+                element={<ProtectedRoute allowedRoles={['WORKER']}><WorkerMissions /></ProtectedRoute>}
               />
+
+              {/* ADMIN — /admin redirige vers la première section ; le sous-menu de la
+                  sidebar et la barre d'onglets mobile naviguent vers /admin/:tab */}
+              <Route
+                path="admin"
+                element={<ProtectedRoute allowedRoles={['ADMIN']}><Navigate to="/admin/ouvriers" replace /></ProtectedRoute>}
+              />
+              <Route
+                path="admin/:tab"
+                element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>}
+              />
+
+              {/* Commun */}
               <Route
                 path="compte"
                 element={<ProtectedRoute><Account /></ProtectedRoute>}
               />
 
-              {/* Publiques : accessibles sans compte */}
+              {/* Publiques */}
               <Route path="recherche" element={<Recherche />} />
               <Route path="ouvrier/:id" element={<WorkerProfile />} />
+
+              {/* Toute route inconnue redirige vers l'accueil */}
+              <Route path="*" element={<Navigate to="/" replace />} />
 
             </Route>
           </Routes>

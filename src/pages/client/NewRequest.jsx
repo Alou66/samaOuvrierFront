@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { requestService } from '../../services/request.service'
-import { METIERS, VILLES } from '../../constants/referenceData'
+import { villeService } from '../../services/ville.service'
+import { metierService } from '../../services/metier.service'
 import { CheckIcon } from '../../components/Icons'
 import LoginForm from '../../components/LoginForm'
 import RegisterForm from '../../components/RegisterForm'
+import VilleSelect from '../../components/VilleSelect'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -20,6 +22,66 @@ const URGENCY = [
 const URGENCY_LABEL = { LOW: 'Pas urgent', NORMAL: 'Normal', HIGH: 'Urgent' }
 
 // ─── Sous-composants ──────────────────────────────────────────────────────────
+
+function PhotoPicker({ value, onChange }) {
+  const inputRef = useRef(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+
+  // `value` est le File brut (nécessaire pour l'upload multipart) ;
+  // l'aperçu passe par une object URL générée localement.
+  useEffect(() => {
+    if (!value) { setPreviewUrl(null); return }
+    const url = URL.createObjectURL(value)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [value])
+
+  const handleFile = (file) => onChange(file ?? null)
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+      />
+
+      {previewUrl ? (
+        <div className="relative overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
+          <img src={previewUrl} alt="Aperçu" className="max-h-48 w-full object-contain" />
+          <button
+            type="button"
+            onClick={() => { onChange(null); if (inputRef.current) inputRef.current.value = '' }}
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-xs text-stone-500 shadow hover:bg-red-50 hover:text-red-600"
+          >
+            ✕
+          </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="absolute bottom-2 right-2 rounded-lg bg-white/90 px-2.5 py-1 text-xs font-medium text-stone-600 shadow hover:bg-white"
+          >
+            Changer
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-stone-200 py-6 text-stone-400 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-500"
+        >
+          <svg className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 21h18M3.75 3h16.5M21 3.75v16.5M3 20.25V3.75" />
+          </svg>
+          <span className="text-sm">Cliquer pour ajouter une photo</span>
+          <span className="text-xs opacity-70">JPG, PNG — max 2 Mo</span>
+        </button>
+      )}
+    </div>
+  )
+}
 
 function SectionTitle({ step, title, subtitle }) {
   return (
@@ -63,6 +125,51 @@ function RequestRecap({ data }) {
   )
 }
 
+// ─── Top bar standalone ───────────────────────────────────────────────────────
+
+function TopBar() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  return (
+    <div className="flex items-center justify-between border-b border-stone-100 bg-white px-5 py-4">
+      {/* Logo */}
+      <Link to="/" className="flex items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-600 text-sm font-bold text-white">
+          S
+        </span>
+        <span className="text-lg font-bold text-stone-900">SamaOuvrier</span>
+      </Link>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3">
+        {user ? (
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm font-medium text-stone-500 hover:text-stone-800"
+          >
+            ← Retour
+          </button>
+        ) : (
+          <>
+            <Link
+              to="/connexion"
+              className="text-sm font-medium text-stone-500 hover:text-stone-800"
+            >
+              Connexion
+            </Link>
+            <Link
+              to="/inscription"
+              className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+            >
+              S'inscrire
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 const STEP = { FORM: 'FORM', AUTH: 'AUTH', SUCCESS: 'SUCCESS' }
@@ -80,6 +187,18 @@ export default function NewRequest() {
   const [form, setForm] = useState({
     metier: '', ville: '', adresse: '', description: '', budget: '', urgency: 'NORMAL',
   })
+  const [photo,   setPhoto]   = useState(null) // File brut (upload multipart)
+  const [villes,  setVilles]  = useState([])
+  const [metiers, setMetiers] = useState([])
+
+  useEffect(() => {
+    villeService.getAllVilles()
+      .then((data) => setVilles(data.map((v) => v.name)))
+      .catch(console.error)
+    metierService.getAllMetiers()
+      .then((data) => setMetiers(data.map((m) => m.name)))
+      .catch(console.error)
+  }, [])
 
   // ── Auto-sauvegarde dès que l'utilisateur s'authentifie ───────────────────
   useEffect(() => {
@@ -117,7 +236,7 @@ export default function NewRequest() {
     description: form.description.trim(),
     budget:      form.budget ? Number(form.budget) : null,
     urgency:     form.urgency,
-    photos:      [],
+    photo:       photo ?? null,
   })
 
   const doSave = async (requestData) => {
@@ -156,17 +275,28 @@ export default function NewRequest() {
 
   const resetForm = () => {
     setForm({ metier: '', ville: '', adresse: '', description: '', budget: '', urgency: 'NORMAL' })
+    setPhoto(null)
     setError('')
     setPendingData(null)
     setStep(STEP.FORM)
   }
 
+  // ── Wrapper commun avec top bar ───────────────────────────────────────────
+  const wrap = (content) => (
+    <div className="flex min-h-screen flex-col bg-stone-50">
+      <TopBar />
+      <div className="flex flex-1 justify-center px-4 py-8">
+        {content}
+      </div>
+    </div>
+  )
+
   // ════════════════════════════════════════════════════════════════════════════
   // ÉTAPE : SUCCÈS
   // ════════════════════════════════════════════════════════════════════════════
   if (step === STEP.SUCCESS) {
-    return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-5 pt-10 text-center">
+    return wrap(
+      <div className="flex w-full max-w-md flex-col items-center gap-5 pt-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
           <CheckIcon className="h-8 w-8 text-green-600" />
         </div>
@@ -201,8 +331,8 @@ export default function NewRequest() {
   // ÉTAPE : AUTHENTIFICATION (demande prête, besoin de connexion)
   // ════════════════════════════════════════════════════════════════════════════
   if (step === STEP.AUTH) {
-    return (
-      <div className="mx-auto max-w-sm pb-10">
+    return wrap(
+      <div className="w-full max-w-sm pb-10">
 
         {/* Retour au formulaire */}
         <button
@@ -276,8 +406,8 @@ export default function NewRequest() {
   // ════════════════════════════════════════════════════════════════════════════
   // ÉTAPE : FORMULAIRE (accessible sans connexion)
   // ════════════════════════════════════════════════════════════════════════════
-  return (
-    <div className="mx-auto max-w-xl pb-10">
+  return wrap(
+    <div className="w-full max-w-xl pb-10">
 
       <div className="mb-6">
         <h1 className="text-xl font-bold text-stone-900">Nouvelle demande d'intervention</h1>
@@ -304,17 +434,18 @@ export default function NewRequest() {
               </label>
               <select value={form.metier} onChange={update('metier')} className={INPUT}>
                 <option value="">Choisir…</option>
-                {METIERS.map((m) => <option key={m} value={m}>{m}</option>)}
+                {metiers.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-400">
                 Ville <span className="text-red-500">*</span>
               </label>
-              <select value={form.ville} onChange={update('ville')} className={INPUT}>
-                <option value="">Choisir…</option>
-                {VILLES.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
+              <VilleSelect
+                value={form.ville}
+                onChange={(v) => { setForm((f) => ({ ...f, ville: v })); setError('') }}
+                villes={villes}
+              />
             </div>
           </div>
 
@@ -372,9 +503,19 @@ export default function NewRequest() {
           </div>
         </div>
 
-        {/* Section 3 — Budget */}
+        {/* Section 3 — Photo optionnelle */}
         <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-5">
-          <SectionTitle step="3" title="Budget indicatif" subtitle="Optionnel — aide les ouvriers à calibrer leur offre" />
+          <SectionTitle
+            step="3"
+            title="Photo du problème"
+            subtitle="Optionnel — une image vaut mieux qu'une longue description"
+          />
+          <PhotoPicker value={photo} onChange={setPhoto} />
+        </div>
+
+        {/* Section 4 — Budget */}
+        <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-5">
+          <SectionTitle step="4" title="Budget indicatif" subtitle="Optionnel — aide les ouvriers à calibrer leur offre" />
           <div className="relative">
             <input
               type="number"

@@ -80,26 +80,6 @@ export function LogOutIcon(props) {
   )
 }
 
-export function BriefcaseIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" {...base} {...props}>
-      <rect x="2" y="7" width="20" height="14" rx="2" />
-      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-      <line x1="12" y1="12" x2="12" y2="12" />
-      <path d="M2 12h20" />
-    </svg>
-  )
-}
-
-export function MapPinIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" {...base} {...props}>
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-      <circle cx="12" cy="9" r="2.5" />
-    </svg>
-  )
-}
-
 export function ShieldIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" {...base} {...props}>

@@ -42,11 +42,11 @@ export default function RequestIntervention() {
         urgency,
         photos: [],
       })
+      setEnvoye(true)
     } catch (err) {
       console.error('[RequestIntervention] Erreur création demande:', err)
     } finally {
       setSubmitting(false)
-      setEnvoye(true)
     }
   }
 

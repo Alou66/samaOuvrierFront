@@ -1,108 +1,66 @@
 import api from './api'
 
-// ─── Contrats d'API ──────────────────────────────────────────────────────────
-// JSON Server  →  GET /clients?email=…   GET /workers?email=…   GET /admins?email=…
-// Spring Boot  →  POST /auth/login        (remplace les trois GET ci-dessus)
-// Spring Boot  →  GET  /auth/me           (getCurrentUser avec JWT)
+const TOKEN_KEY = 'sama_token'
 
 export const authService = {
-  registerClient: (data) =>
-    api
-      .post('/clients', {
-        ...data,
-        role: 'CLIENT',
-        photoProfil: null,
-        isSuspended: false,
-        suspensionReason: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .then((r) => r.data),
 
-  registerWorker: (data) => {
-    // Séparer les champs fichiers des autres pour éviter de les écraser par null
-    const { photoProfil, pieceIdentiteRecto, pieceIdentiteVerso, certificat, ...rest } = data
-    return api
-      .post('/workers', {
-        ...rest,
-        role: 'WORKER',
-        isAvailable: true,
-        isVerified: false,
-        isSuspended: false,
-        verificationStatus: 'PENDING',
-        rejectionReason: null,
-        suspensionReason: null,
-        note: 0,
-        avis: 0,
-        photoProfil: photoProfil ?? null,
-        pieceIdentiteRecto: pieceIdentiteRecto ?? null,
-        pieceIdentiteVerso: pieceIdentiteVerso ?? null,
-        certificat: certificat ?? null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .then((r) => r.data)
+  login: async ({ email, password }) => {
+    try {
+      const { data } = await api.post('/api/auth/login', { email, password })
+      localStorage.setItem(TOKEN_KEY, data.token)
+      return { user: data.user }
+    } catch (err) {
+      const message = err.response?.data?.message ?? 'Erreur de connexion.'
+      const status  = err.response?.status
+
+      // Traduit les codes HTTP en raisons compréhensibles par AuthContext
+      if (status === 401) return { blocked: true, reason: 'WRONG_PASSWORD' }
+      if (status === 403) {
+        const msg = err.response?.data?.message ?? ''
+        if (msg.includes('suspendu'))             return { blocked: true, reason: 'SUSPENDED',             adminMessage: msg }
+        if (msg.includes('vérification'))         return { blocked: true, reason: 'PENDING_VERIFICATION' }
+        if (msg.includes("n'a pas été approuvé")) return { blocked: true, reason: 'REJECTED_VERIFICATION', adminMessage: msg }
+        return { blocked: true, reason: 'SUSPENDED', adminMessage: msg }
+      }
+      if (status === 404) return { blocked: true, reason: 'NOT_FOUND' }
+      return { blocked: true, reason: message }
+    }
   },
 
-  /**
-   * Cherche l'email dans /clients, /workers, puis /admins.
-   *
-   * Retourne :
-   *   { user }                            — connexion autorisée
-   *   { blocked: true, reason: string }   — connexion refusée (voir raisons ci-dessous)
-   *
-   * Raisons possibles :
-   *   'NOT_FOUND'               — aucun compte avec cet email
-   *   'CLIENT_SUSPENDED'        — compte client suspendu par l'admin
-   *   'SUSPENDED'               — compte ouvrier suspendu par l'admin
-   *   'PENDING_VERIFICATION'    — dossier ouvrier en cours de vérification
-   *   'REJECTED_VERIFICATION'   — dossier ouvrier rejeté
-   *
-   * Migration Spring Boot : remplacer par
-   *   api.post('/auth/login', { email, password }).then((r) => r.data)
-   */
-  login: async ({ email }) => {
-    const [clientsRes, workersRes, adminsRes] = await Promise.all([
-      api.get(`/clients?email=${encodeURIComponent(email)}`),
-      api.get(`/workers?email=${encodeURIComponent(email)}`),
-      api.get(`/admins?email=${encodeURIComponent(email)}`),
-    ])
-
-    if (clientsRes.data.length > 0) {
-      const client = clientsRes.data[0]
-      if (client.isSuspended) {
-        return { blocked: true, reason: 'CLIENT_SUSPENDED', adminMessage: client.suspensionReason }
-      }
-      return { user: client }
-    }
-
-    if (workersRes.data.length > 0) {
-      const worker = workersRes.data[0]
-
-      if (worker.isSuspended) {
-        return { blocked: true, reason: 'SUSPENDED', adminMessage: worker.suspensionReason }
-      }
-      if (worker.verificationStatus === 'PENDING') {
-        return { blocked: true, reason: 'PENDING_VERIFICATION' }
-      }
-      if (worker.verificationStatus === 'REJECTED') {
-        return { blocked: true, reason: 'REJECTED_VERIFICATION', adminMessage: worker.rejectionReason }
-      }
-
-      return { user: worker }
-    }
-
-    if (adminsRes.data.length > 0) return { user: adminsRes.data[0] }
-
-    return { blocked: true, reason: 'NOT_FOUND' }
+  registerClient: async (data) => {
+    const { data: resp } = await api.post('/api/auth/register/client', {
+      nom:       data.nom,
+      email:     data.email,
+      telephone: data.telephone,
+      password:  data.password,
+      ville:     data.ville,
+    })
+    localStorage.setItem(TOKEN_KEY, resp.token)
+    return resp.user
   },
 
-  /**
-   * Migration Spring Boot : remplacer par api.get('/auth/me').then((r) => r.data)
-   */
-  getCurrentUser: (id, role) => {
-    const collection =
-      role === 'WORKER' ? 'workers' : role === 'ADMIN' ? 'admins' : 'clients'
-    return api.get(`/${collection}/${id}`).then((r) => r.data)
+  registerWorker: async (data) => {
+    const form = new FormData()
+    form.append('nom',               data.nom)
+    form.append('email',             data.email)
+    form.append('telephone',         data.telephone ?? '')
+    form.append('password',          data.password)
+    form.append('ville',             data.ville ?? '')
+    form.append('metier',            data.metier)
+    form.append('description',       data.description ?? '')
+    form.append('yearsOfExperience', data.yearsOfExperience ?? 0)
+    if (data.photoProfil)         form.append('photoProfil',         data.photoProfil)
+    if (data.pieceIdentiteRecto)  form.append('pieceIdentiteRecto',  data.pieceIdentiteRecto)
+    if (data.pieceIdentiteVerso)  form.append('pieceIdentiteVerso',  data.pieceIdentiteVerso)
+    if (data.certificat)          form.append('certificat',          data.certificat)
+
+    await api.post('/api/auth/register/worker', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    // Pas de token — le dossier est en attente de validation admin
+  },
+
+  logout: () => {
+    localStorage.removeItem(TOKEN_KEY)
   },
 }

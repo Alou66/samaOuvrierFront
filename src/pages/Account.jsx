@@ -1,24 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
-
-const COLLECTION = { CLIENT: 'clients', WORKER: 'workers', ADMIN: 'admins' }
-
-const METIERS = [
-  'Plombier', 'Électricien', 'Maçon', 'Menuisier', 'Peintre',
-  'Carreleur', 'Jardinier', 'Soudeur', 'Mécanicien', 'Climatiseur',
-  'Autre',
-]
+import { villeService } from '../services/ville.service'
+import { metierService } from '../services/metier.service'
+import VilleSelect from '../components/VilleSelect'
 
 const LANGUAGES_OPTIONS = ['Wolof', 'Français', 'Anglais', 'Pulaar', 'Sérère', 'Mandingue', 'Diola']
 
 export default function Account() {
   const { user, updateUser } = useAuth()
 
-  const [editing, setEditing]   = useState(false)
-  const [saving, setSaving]     = useState(false)
-  const [success, setSuccess]   = useState(false)
-  const [error, setError]       = useState(null)
+  const photoInputRef              = useRef(null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+  const [editing, setEditing]      = useState(false)
+  const [saving, setSaving]        = useState(false)
+  const [success, setSuccess]      = useState(false)
+  const [error, setError]          = useState(null)
 
   // Formulaire initialisé avec les données actuelles
   const [form, setForm] = useState({
@@ -27,11 +24,37 @@ export default function Account() {
     telephone:         user?.telephone         ?? '',
     ville:             user?.ville             ?? '',
     // champs ouvrier
-    metier:            user?.metier            ?? '',
-    description:       user?.description       ?? '',
-    yearsOfExperience: user?.yearsOfExperience ?? '',
-    languages:         user?.languages         ?? [],
+    metier:            user?.workerProfile?.metier            ?? '',
+    description:       user?.workerProfile?.description       ?? '',
+    yearsOfExperience: user?.workerProfile?.yearsOfExperience ?? '',
+    languages:         user?.workerProfile?.languages         ?? [],
   })
+
+  const [villes,  setVilles]  = useState([])
+  const [metiers, setMetiers] = useState([])
+  useEffect(() => {
+    api.get('/api/account/me')
+      .then(({ data }) => {
+        updateUser(data)
+        setForm({
+          nom:               data.nom               ?? '',
+          email:             data.email             ?? '',
+          telephone:         data.telephone         ?? '',
+          ville:             data.ville             ?? '',
+          metier:            data.workerProfile?.metier            ?? '',
+          description:       data.workerProfile?.description       ?? '',
+          yearsOfExperience: data.workerProfile?.yearsOfExperience ?? '',
+          languages:         data.workerProfile?.languages         ?? [],
+        })
+      })
+      .catch(console.error)
+    villeService.getAllVilles()
+      .then((data) => setVilles(data.map((v) => v.name)))
+      .catch(console.error)
+    metierService.getAllMetiers()
+      .then((data) => setMetiers(data.map((m) => m.name)))
+      .catch(console.error)
+  }, [])
 
   if (!user) return null
 
@@ -52,13 +75,11 @@ export default function Account() {
     setError(null)
     setSuccess(false)
 
-    const collection = COLLECTION[user.role]
     const patch = {
       nom:       form.nom.trim(),
       email:     form.email.trim(),
       telephone: form.telephone.trim(),
       ville:     form.ville.trim(),
-      updatedAt: new Date().toISOString(),
     }
 
     if (user.role === 'WORKER') {
@@ -69,7 +90,7 @@ export default function Account() {
     }
 
     try {
-      const { data: updated } = await api.patch(`/${collection}/${user.id}`, patch)
+      const { data: updated } = await api.put('/api/account/me', patch)
       updateUser(updated)
       setSuccess(true)
       setEditing(false)
@@ -87,13 +108,32 @@ export default function Account() {
       email:             user.email             ?? '',
       telephone:         user.telephone         ?? '',
       ville:             user.ville             ?? '',
-      metier:            user.metier            ?? '',
-      description:       user.description       ?? '',
-      yearsOfExperience: user.yearsOfExperience ?? '',
-      languages:         user.languages         ?? [],
+      metier:            user.workerProfile?.metier            ?? '',
+      description:       user.workerProfile?.description       ?? '',
+      yearsOfExperience: user.workerProfile?.yearsOfExperience ?? '',
+      languages:         user.workerProfile?.languages         ?? [],
     })
     setError(null)
     setEditing(false)
+  }
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const { data } = await api.patch('/api/account/me/photo', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      updateUser(data)
+    } catch (err) {
+      console.error('[Account] Erreur changement de photo:', err)
+    } finally {
+      setPhotoLoading(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
   }
 
   const ROLE_LABEL = { CLIENT: 'Client', WORKER: 'Ouvrier', ADMIN: 'Administrateur' }
@@ -108,8 +148,29 @@ export default function Account() {
 
       {/* En-tête */}
       <div className="mb-5 flex items-center gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xl font-bold text-primary-700">
-          {user.nom?.charAt(0).toUpperCase()}
+        <div className="relative shrink-0">
+          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-xl font-bold text-primary-700">
+            {user.photoProfilUrl
+              ? <img src={user.photoProfilUrl} alt={user.nom} className="h-full w-full object-cover" />
+              : user.nom?.charAt(0).toUpperCase()
+            }
+          </div>
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={photoLoading}
+            className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-[10px] text-white shadow hover:bg-primary-700 disabled:opacity-50"
+            title="Changer la photo de profil"
+          >
+            {photoLoading ? '…' : '✎'}
+          </button>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoChange}
+          />
         </div>
         <div>
           <h1 className="text-lg font-bold text-stone-900">{user.nom}</h1>
@@ -193,11 +254,10 @@ export default function Account() {
             {/* Ville */}
             <Field label="Ville">
               {editing ? (
-                <input
+                <VilleSelect
                   value={form.ville}
-                  onChange={set('ville')}
-                  className={INPUT}
-                  placeholder="Dakar, Thiès…"
+                  onChange={(v) => setForm((f) => ({ ...f, ville: v }))}
+                  villes={villes}
                 />
               ) : (
                 <Value>{user.ville || '—'}</Value>
@@ -217,10 +277,10 @@ export default function Account() {
                 {editing ? (
                   <select value={form.metier} onChange={set('metier')} className={INPUT}>
                     <option value="">Choisir…</option>
-                    {METIERS.map((m) => <option key={m} value={m}>{m}</option>)}
+                    {metiers.map((m) => <option key={m} value={m}>{m}</option>)}
                   </select>
                 ) : (
-                  <Value>{user.metier || '—'}</Value>
+                  <Value>{user.workerProfile?.metier || '—'}</Value>
                 )}
               </Field>
 
@@ -237,7 +297,7 @@ export default function Account() {
                     placeholder="5"
                   />
                 ) : (
-                  <Value>{user.yearsOfExperience ? `${user.yearsOfExperience} ans` : '—'}</Value>
+                  <Value>{user.workerProfile?.yearsOfExperience ? `${user.workerProfile.yearsOfExperience} ans` : '—'}</Value>
                 )}
               </Field>
 
@@ -252,7 +312,7 @@ export default function Account() {
                     placeholder="Décrivez vos compétences et votre expérience…"
                   />
                 ) : (
-                  <Value>{user.description || '—'}</Value>
+                  <Value>{user.workerProfile?.description || '—'}</Value>
                 )}
               </Field>
 
@@ -276,7 +336,7 @@ export default function Account() {
                     ))}
                   </div>
                 ) : (
-                  <Value>{user.languages?.length ? user.languages.join(', ') : '—'}</Value>
+                  <Value>{user.workerProfile?.languages?.length ? user.workerProfile.languages.join(', ') : '—'}</Value>
                 )}
               </Field>
             </div>

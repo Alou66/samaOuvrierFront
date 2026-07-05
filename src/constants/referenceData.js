@@ -2,20 +2,13 @@ export const METIERS = [
   'Plombier',
   'Électricien',
   'Maçon',
-  'Peintre',
   'Menuisier',
-  'Technicien froid',
+  'Peintre',
   'Carreleur',
   'Soudeur',
+  'Jardinier',
+  'Mécanicien',
+  'Technicien froid',
+  'Climatiseur',
 ]
 
-export const VILLES = [
-  'Dakar',
-  'Thiès',
-  'Saint-Louis',
-  'Kaolack',
-  'Ziguinchor',
-  'Touba',
-  'Mbour',
-  'Rufisque',
-]

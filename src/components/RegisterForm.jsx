@@ -1,6 +1,15 @@
-import { useRef, useState } from 'react'
-import { METIERS, VILLES } from '../constants/referenceData'
+import { useEffect, useRef, useState } from 'react'
+import { villeService } from '../services/ville.service'
+import { metierService } from '../services/metier.service'
 import { useAuth } from '../context/AuthContext'
+import VilleSelect from './VilleSelect'
+import {
+  isValidEmail,
+  isValidSenegalPhone,
+  isValidPassword,
+  normalizePhone,
+  VALIDATION_MESSAGES,
+} from '../utils/validation'
 
 // ─── Composant sélecteur de fichier ──────────────────────────────────────────
 
@@ -126,6 +135,19 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
   const [role, setRole] = useState(lockedRole ?? 'CLIENT')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [workerPending, setWorkerPending] = useState(false)
+  const [pendingNom, setPendingNom] = useState('')
+  const [villes,  setVilles]  = useState([])
+  const [metiers, setMetiers] = useState([])
+
+  useEffect(() => {
+    villeService.getAllVilles()
+      .then((data) => setVilles(data.map((v) => v.name)))
+      .catch(console.error)
+    metierService.getAllMetiers()
+      .then((data) => setMetiers(data.map((m) => m.name)))
+      .catch(console.error)
+  }, [])
 
   // Champs texte communs
   const [form, setForm] = useState({
@@ -161,15 +183,43 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
   // ─── Validation ─────────────────────────────────────────────────────────────
 
   const validate = () => {
+    if (!form.nom.trim()) {
+      setError('Le nom est obligatoire.')
+      return false
+    }
+    if (!isValidEmail(form.email)) {
+      setError(VALIDATION_MESSAGES.email)
+      return false
+    }
+    if (!isValidSenegalPhone(form.telephone)) {
+      setError(VALIDATION_MESSAGES.phone)
+      return false
+    }
+    if (!isValidPassword(form.password)) {
+      setError(VALIDATION_MESSAGES.password)
+      return false
+    }
     if (form.password !== form.confirmPassword) {
       setError('Les mots de passe ne correspondent pas.')
       return false
     }
-    if (form.password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.')
-      return false
-    }
     if (role === 'WORKER') {
+      if (!form.metier) {
+        setError('Le métier est obligatoire.')
+        return false
+      }
+      if (!form.villeWorker) {
+        setError("La ville d'activité est obligatoire.")
+        return false
+      }
+      if (!form.description.trim()) {
+        setError('La description est obligatoire.')
+        return false
+      }
+      if (form.yearsOfExperience === '' || Number(form.yearsOfExperience) < 0) {
+        setError("Les années d'expérience sont obligatoires.")
+        return false
+      }
       if (!files.pieceIdentiteRecto) {
         setError("La photo recto de votre pièce d'identité est obligatoire.")
         return false
@@ -191,44 +241,87 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
 
     setSubmitting(true)
     try {
-      // Construire un chemin simulé pour chaque fichier
-      // (en production Spring Boot, ce seront de vrais uploads multipart)
-      const ts = Date.now()
-      const filePath = (file) =>
-        file ? `/uploads/workers/${ts}/${file.name}` : null
-
+      const telephone = normalizePhone(form.telephone)
       const payload =
         role === 'CLIENT'
           ? {
-              nom: form.nom,
-              email: form.email,
-              telephone: form.telephone,
-              password: form.password,
-              ville: form.ville,
+              nom:       form.nom.trim(),
+              email:     form.email.trim(),
+              telephone,
+              password:  form.password,
+              ville:     form.ville,
             }
           : {
-              nom: form.nom,
-              email: form.email,
-              telephone: form.telephone,
-              password: form.password,
-              metier: form.metier,
-              ville: form.villeWorker,
-              description: form.description,
+              nom:               form.nom.trim(),
+              email:             form.email.trim(),
+              telephone,
+              password:          form.password,
+              metier:            form.metier,
+              ville:             form.villeWorker,
+              description:       form.description,
               yearsOfExperience: form.yearsOfExperience ? Number(form.yearsOfExperience) : null,
-              photoProfil: filePath(files.photoProfil),
-              pieceIdentiteRecto: filePath(files.pieceIdentiteRecto),
-              pieceIdentiteVerso: filePath(files.pieceIdentiteVerso),
-              certificat: filePath(files.certificat),
+              photoProfil:        files.photoProfil,
+              pieceIdentiteRecto: files.pieceIdentiteRecto,
+              pieceIdentiteVerso: files.pieceIdentiteVerso,
+              certificat:         files.certificat,
             }
 
-      await register(payload, role)
-      onSuccess?.(role)
+      const result = await register(payload, role)
+      if (result?.error) {
+        setError(result.message ?? "Une erreur s'est produite. Veuillez réessayer.")
+        return
+      }
+      if (result?.pending) {
+        // Worker en attente de validation — ne pas rediriger
+        setPendingNom(form.nom)
+        setWorkerPending(true)
+      } else {
+        onSuccess?.(role)
+      }
     } catch (err) {
       console.error('[RegisterForm] Erreur inscription:', err)
       setError("Une erreur s'est produite. Veuillez réessayer.")
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // ─── Écran confirmation dossier ouvrier ─────────────────────────────────────
+
+  if (workerPending) {
+    return (
+      <div className="flex flex-col items-center gap-5 py-4 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <span className="text-3xl">✓</span>
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-stone-900">
+            Dossier soumis avec succès !
+          </h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Merci <span className="font-semibold text-stone-700">{pendingNom.split(' ')[0]}</span>.
+            Votre dossier est en cours d'examen par notre équipe.
+          </p>
+        </div>
+        <div className="w-full rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-left">
+          <p className="text-sm font-semibold text-yellow-800">Prochaines étapes</p>
+          <ul className="mt-2 space-y-1 text-sm text-yellow-700">
+            <li>• Notre équipe vérifie vos documents</li>
+            <li>• Vous recevrez une confirmation par email</li>
+            <li>• Une fois approuvé, vous pouvez vous connecter</li>
+          </ul>
+        </div>
+        {onSwitchToLogin && (
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="w-full rounded-xl bg-primary-600 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
+          >
+            Retour à la connexion
+          </button>
+        )}
+      </div>
+    )
   }
 
   // ─── Rendu ──────────────────────────────────────────────────────────────────
@@ -283,6 +376,8 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
 
       <Field label="Téléphone" required>
         <input
+          type="tel"
+          inputMode="numeric"
           value={form.telephone}
           onChange={update('telephone')}
           required
@@ -298,7 +393,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
             value={form.password}
             onChange={update('password')}
             required
-            placeholder="6 caractères min."
+            placeholder="8 car. min., lettres et chiffres"
             className={INPUT}
           />
         </Field>
@@ -317,12 +412,11 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
       {/* Ville uniquement pour CLIENT */}
       {role === 'CLIENT' && (
         <Field label="Ville">
-          <select value={form.ville} onChange={update('ville')} className={INPUT}>
-            <option value="">Choisir...</option>
-            {VILLES.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
+          <VilleSelect
+            value={form.ville}
+            onChange={(v) => { setForm((f) => ({ ...f, ville: v })); setError('') }}
+            villes={villes}
+          />
         </Field>
       )}
 
@@ -340,24 +434,18 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin, lockedRole = 
                 className={INPUT}
               >
                 <option value="">Choisir...</option>
-                {METIERS.map((m) => (
+                {metiers.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </Field>
 
             <Field label="Ville d'activité" required>
-              <select
+              <VilleSelect
                 value={form.villeWorker}
-                onChange={update('villeWorker')}
-                required
-                className={INPUT}
-              >
-                <option value="">Choisir...</option>
-                {VILLES.map((v) => (
-                  <option key={v} value={v}>{v}</option>
-                ))}
-              </select>
+                onChange={(v) => { setForm((f) => ({ ...f, villeWorker: v })); setError('') }}
+                villes={villes}
+              />
             </Field>
           </div>
 

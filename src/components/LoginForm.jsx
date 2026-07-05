@@ -8,7 +8,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const loggedUser = await login(email)
+    const loggedUser = await login(email, password)
     // onSuccess est appelé uniquement si la connexion a réussi
     if (loggedUser) {
       onSuccess?.(loggedUser.role)

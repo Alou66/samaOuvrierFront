@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
 
   const AUTH_MESSAGES = {
     NOT_FOUND:             "Aucun compte trouvé avec cet email.",
+    WRONG_PASSWORD:        "Mot de passe incorrect.",
     CLIENT_SUSPENDED:      "Votre compte client a été suspendu par l'administrateur.",
     SUSPENDED:             "Votre compte a été suspendu. Contactez l'administrateur.",
     PENDING_VERIFICATION:  "Votre dossier est en cours de vérification. Vous serez contacté une fois approuvé.",
@@ -35,11 +36,11 @@ export function AuthProvider({ children }) {
   /**
    * Retourne l'objet user si la connexion réussit, null sinon.
    */
-  const login = async (email) => {
+  const login = async (email, password) => {
     setAuthLoading(true)
     setAuthError(null)
     try {
-      const result = await authService.login({ email })
+      const result = await authService.login({ email, password })
 
       if (result.blocked) {
         const base = AUTH_MESSAGES[result.reason] ?? 'Connexion refusée.'
@@ -62,26 +63,30 @@ export function AuthProvider({ children }) {
   }
 
   /**
-   * Inscription — stratégie optimiste : user set immédiatement,
-   * puis mis à jour avec l'id serveur.
+   * Inscription.
+   * - CLIENT : connecte directement, retourne { pending: false }
+   * - WORKER : crée le compte mais NE connecte PAS (dossier en attente admin),
+   *            retourne { pending: true }
    */
   const register = async (form, role = 'CLIENT') => {
     setAuthLoading(true)
     setAuthError(null)
-
-    const optimisticUser = { nom: form.nom, email: form.email, telephone: form.telephone, ville: form.ville, role }
-    saveUser(optimisticUser)
-
     try {
-      let created
       if (role === 'CLIENT') {
-        created = await authService.registerClient(form)
+        const created = await authService.registerClient(form)
+        saveUser(created)
+        return { pending: false }
       } else {
-        created = await authService.registerWorker(form)
+        await authService.registerWorker(form)
+        // Worker non connecté — dossier soumis, en attente de validation admin
+        return { pending: true }
       }
-      saveUser(created)
     } catch (err) {
       console.error('[Auth] register error:', err)
+      const data = err.response?.data
+      const message = data?.details?.[0] ?? data?.message
+      setAuthError(message ?? "Une erreur s'est produite. Veuillez réessayer.")
+      return { pending: false, error: true, message }
     } finally {
       setAuthLoading(false)
     }
@@ -96,6 +101,7 @@ export function AuthProvider({ children }) {
     setUser(null)
     setAuthError(null)
     localStorage.removeItem(STORAGE_KEY)
+    authService.logout() // efface aussi sama_token
   }
 
   return (

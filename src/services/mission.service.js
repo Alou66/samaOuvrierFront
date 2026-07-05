@@ -1,37 +1,29 @@
 import api from './api'
 
-// Statuts mission : PENDING → STARTED → COMPLETED | CANCELLED
-
 export const missionService = {
-  createMission: (data) =>
-    api
-      .post('/missions', {
-        ...data,
-        status: 'PENDING',
-        acceptedAt: new Date().toISOString(),
-        startedAt: null,
-        completedAt: null,
-      })
-      .then((r) => r.data),
+  // Client connecté
+  getMissionsByClient: () => api.get('/api/missions/client').then((r) => r.data),
 
-  getMissionById: (id) => api.get(`/missions/${id}`).then((r) => r.data),
+  // Ouvrier connecté
+  getMissionsByWorker: () => api.get('/api/missions/worker').then((r) => r.data),
 
-  getMissionsByWorker: (workerId) =>
-    api.get(`/missions?workerId=${workerId}`).then((r) => r.data),
+  // Ouvrier connecté — historique paginé et filtrable des missions terminées
+  getCompletedMissionsByWorker: ({ page = 0, size = 10, from, to, minRating, unratedOnly } = {}) => {
+    const params = new URLSearchParams({ page, size })
+    if (from)       params.set('from', from)
+    if (to)         params.set('to', to)
+    if (minRating)  params.set('minRating', minRating)
+    if (unratedOnly) params.set('unratedOnly', 'true')
+    return api.get(`/api/missions/worker/completed?${params.toString()}`).then((r) => r.data)
+  },
 
-  getMissionsByClient: (clientId) =>
-    api.get(`/missions?clientId=${clientId}`).then((r) => r.data),
+  // Admin
+  getAllMissions: ({ page = 0, size = 20 } = {}) =>
+    api.get(`/api/missions/admin?page=${page}&size=${size}`).then((r) => r.data),
 
-  startMission: (id) =>
-    api
-      .patch(`/missions/${id}`, { status: 'STARTED', startedAt: new Date().toISOString() })
-      .then((r) => r.data),
+  getMissionById:  (id) => api.get(`/api/missions/${id}`).then((r) => r.data),
 
-  completeMission: (id) =>
-    api
-      .patch(`/missions/${id}`, { status: 'COMPLETED', completedAt: new Date().toISOString() })
-      .then((r) => r.data),
-
-  cancelMission: (id) =>
-      api.patch(`/missions/${id}`, { status: 'CANCELLED' }).then((r) => r.data),
+  startMission:    (id) => api.post(`/api/missions/${id}/start`).then((r) => r.data),
+  completeMission: (id) => api.post(`/api/missions/${id}/complete`).then((r) => r.data),
+  cancelMission:   (id) => api.post(`/api/missions/${id}/cancel`).then((r) => r.data),
 }

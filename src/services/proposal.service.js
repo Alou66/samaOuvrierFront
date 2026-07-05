@@ -1,25 +1,21 @@
 import api from './api'
 
-// Statuts proposal : PENDING → ACCEPTED | REJECTED | EXPIRED
-
 export const proposalService = {
   createProposal: (data) =>
-    api
-      .post('/proposals', { ...data, status: 'PENDING', createdAt: new Date().toISOString() })
-      .then((r) => r.data),
+    api.post('/api/proposals', {
+      requestId:                data.requestId,
+      price:                    data.price,
+      estimatedDurationMinutes: data.estimatedDurationMinutes,
+      message:                  data.message,
+    }).then((r) => r.data),
 
   getProposalsByRequest: (requestId) =>
-    api.get(`/proposals?requestId=${requestId}`).then((r) => r.data),
+    api.get(`/api/proposals/request/${requestId}`).then((r) => r.data),
 
-  getProposalsByWorker: (workerId) =>
-    api.get(`/proposals?workerId=${workerId}`).then((r) => r.data),
+  // Mes propositions (ouvrier connecté)
+  getMyProposals: () => api.get('/api/proposals/my').then((r) => r.data),
 
-  acceptProposal: (id) =>
-    api.patch(`/proposals/${id}`, { status: 'ACCEPTED' }).then((r) => r.data),
-
-  rejectProposal: (id) =>
-    api.patch(`/proposals/${id}`, { status: 'REJECTED' }).then((r) => r.data),
-
-  expireProposal: (id) =>
-    api.patch(`/proposals/${id}`, { status: 'EXPIRED' }).then((r) => r.data),
+  acceptProposal:   (id) => api.post(`/api/proposals/${id}/accept`).then((r) => r.data),
+  rejectProposal:   (id) => api.post(`/api/proposals/${id}/reject`).then((r) => r.data),
+  withdrawProposal: (id) => api.post(`/api/proposals/${id}/withdraw`).then((r) => r.data),
 }
