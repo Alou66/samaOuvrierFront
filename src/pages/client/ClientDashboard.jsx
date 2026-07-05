@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useNewRequestModal } from '../../context/NewRequestModalContext'
 import { requestService } from '../../services/request.service'
 import { missionService } from '../../services/mission.service'
 import { formatPrice, formatDuration } from '../../utils/format'
@@ -87,6 +88,7 @@ function MissionDetailModal({ mission, request, onClose }) {
 export default function ClientDashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { openNewRequestModal } = useNewRequestModal()
 
   const [requests,      setRequests]      = useState([])
   const [missions,      setMissions]      = useState([])
@@ -166,7 +168,7 @@ export default function ClientDashboard() {
             <p className="text-sm text-stone-500">Voici un résumé de votre activité.</p>
           </div>
           <button
-            onClick={() => navigate('/nouvelle-demande')}
+            onClick={openNewRequestModal}
             className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
           >
             + Nouvelle demande
@@ -224,7 +226,7 @@ export default function ClientDashboard() {
             <div className="rounded-xl border border-dashed border-stone-200 py-10 text-center">
               <p className="text-sm text-stone-500">Aucune demande pour le moment.</p>
               <button
-                onClick={() => navigate('/nouvelle-demande')}
+                onClick={openNewRequestModal}
                 className="mt-3 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
               >
                 Faire ma première demande

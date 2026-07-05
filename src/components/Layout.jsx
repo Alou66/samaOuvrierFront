@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useNewRequestModal } from '../context/NewRequestModalContext'
 import {
   HomeIcon, ListIcon, UserIcon, SearchIcon,
   PlusIcon, DashboardIcon, LogOutIcon, ShieldIcon,
@@ -95,7 +96,7 @@ function LogoutConfirmModal({ onConfirm, onCancel }) {
 
 // ─── Sidebar desktop ──────────────────────────────────────────────────────────
 
-function Sidebar({ user, navItems, onLogout, onLogin, onRegister }) {
+function Sidebar({ user, navItems, onLogout, onLogin, onRegister, onNewRequest }) {
   const meta      = user ? ROLE_META[user.role] : null
   const avatarBg  = user ? (AVATAR_BG[user.role] ?? 'bg-stone-100 text-stone-700') : ''
 
@@ -134,32 +135,39 @@ function Sidebar({ user, navItems, onLogout, onLogin, onRegister }) {
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-2">
         {navItems.map((item) => (
           <div key={item.to}>
-            <NavLink
-              to={item.to}
-              end={item.end ?? false}
-              className={({ isActive }) =>
-                `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                  item.cta
-                    ? isActive
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
-                    : isActive
+            {item.cta ? (
+              <button
+                type="button"
+                onClick={onNewRequest}
+                className="group relative flex w-full items-center gap-3 rounded-xl bg-primary-50 px-3 py-2.5 text-sm font-medium text-primary-700 transition-all hover:bg-primary-100"
+              >
+                <item.Icon />
+                <span>{item.label}</span>
+              </button>
+            ) : (
+              <NavLink
+                to={item.to}
+                end={item.end ?? false}
+                className={({ isActive }) =>
+                  `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                    isActive
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-stone-500 hover:bg-stone-50 hover:text-stone-800'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {/* Bordure active gauche */}
-                  {!item.cta && isActive && (
-                    <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary-600" />
-                  )}
-                  <item.Icon />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Bordure active gauche */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary-600" />
+                    )}
+                    <item.Icon />
+                    <span>{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            )}
 
             {/* Sous-menu (ex. sections de l'admin sous "Tableau de bord") */}
             {item.children && (
@@ -272,49 +280,49 @@ function MobileHeader({ user, onLogin, onRegister, onAvatarClick }) {
 
 // ─── Bottom nav mobile ────────────────────────────────────────────────────────
 
-function MobileBottomNav({ navItems }) {
+function MobileBottomNav({ navItems, onNewRequest }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-stone-100 bg-white/95 backdrop-blur-sm md:hidden">
       {navItems.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.end ?? false}
-          className={({ isActive }) =>
-            `relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-semibold leading-none transition-colors ${
-              item.cta
-                ? 'text-primary-600'
-                : isActive
-                  ? 'text-primary-700'
-                  : 'text-stone-400 hover:text-stone-600'
-            }`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              {/* Barre active en haut */}
-              {!item.cta && isActive && (
-                <span className="absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-primary-600" />
-              )}
-
-              {item.cta ? (
-                <span className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-transform active:scale-95 ${
-                  isActive ? 'bg-primary-700' : 'bg-primary-600'
-                }`}>
-                  <item.Icon stroke="white" />
-                </span>
-              ) : (
+        item.cta ? (
+          <button
+            key={item.to}
+            type="button"
+            onClick={onNewRequest}
+            className="relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-semibold leading-none text-primary-600"
+          >
+            <span className="-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 shadow-lg transition-transform active:scale-95">
+              <item.Icon stroke="white" />
+            </span>
+            <span className="mt-1">{item.shortLabel}</span>
+          </button>
+        ) : (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end ?? false}
+            className={({ isActive }) =>
+              `relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-semibold leading-none transition-colors ${
+                isActive ? 'text-primary-700' : 'text-stone-400 hover:text-stone-600'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {/* Barre active en haut */}
+                {isActive && (
+                  <span className="absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-primary-600" />
+                )}
                 <span className={`flex h-7 w-7 items-center justify-center rounded-xl transition-colors ${
                   isActive ? 'bg-primary-50' : ''
                 }`}>
                   <item.Icon />
                 </span>
-              )}
-
-              <span className={item.cta ? 'mt-1' : ''}>{item.shortLabel}</span>
-            </>
-          )}
-        </NavLink>
+                <span>{item.shortLabel}</span>
+              </>
+            )}
+          </NavLink>
+        )
       ))}
     </nav>
   )
@@ -325,6 +333,7 @@ function MobileBottomNav({ navItems }) {
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { openNewRequestModal } = useNewRequestModal()
   const [confirmLogout, setConfirmLogout] = useState(false)
 
   const navItems = getNav(user?.role)
@@ -350,6 +359,7 @@ export default function Layout() {
         onLogout={() => setConfirmLogout(true)}
         onLogin={() => navigate('/connexion')}
         onRegister={() => navigate('/inscription')}
+        onNewRequest={openNewRequestModal}
       />
 
       <MobileHeader
@@ -365,7 +375,7 @@ export default function Layout() {
         </div>
       </main>
 
-      <MobileBottomNav navItems={navItems} />
+      <MobileBottomNav navItems={navItems} onNewRequest={openNewRequestModal} />
     </div>
   )
 }

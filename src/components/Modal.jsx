@@ -1,4 +1,4 @@
-export default function Modal({ open, onClose, children }) {
+export default function Modal({ open, onClose, children, widthClass = 'max-w-md' }) {
   if (!open) return null
 
   return (
@@ -7,7 +7,7 @@ export default function Modal({ open, onClose, children }) {
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-6"
+        className={`max-h-[90vh] w-full ${widthClass} overflow-y-auto rounded-xl bg-white p-6`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

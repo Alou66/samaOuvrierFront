@@ -5,6 +5,7 @@ import { missionService } from '../../services/mission.service'
 import { workerService } from '../../services/worker.service'
 import { ratingService } from '../../services/rating.service'
 import { useAuth } from '../../context/AuthContext'
+import { useNewRequestModal } from '../../context/NewRequestModalContext'
 import { useTrip } from '../../context/TripContext'
 import ProposalsList from '../../components/ProposalsList'
 import RatingModal from '../../components/RatingModal'
@@ -94,6 +95,7 @@ export default function ClientRequests() {
   const { user } = useAuth()
   const { demarrerMissionDirecte } = useTrip()
   const navigate = useNavigate()
+  const { openNewRequestModal } = useNewRequestModal()
 
   const [demandes,        setDemandes]        = useState([])
   const [missionByRequest, setMissionByRequest] = useState({})
@@ -263,7 +265,7 @@ export default function ClientRequests() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-bold text-stone-900">Mes demandes</h1>
         <button
-          onClick={() => navigate('/nouvelle-demande')}
+          onClick={openNewRequestModal}
           className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
         >
           + Nouvelle demande
@@ -274,7 +276,7 @@ export default function ClientRequests() {
         <div className="rounded-xl border border-dashed border-stone-300 p-10 text-center text-stone-500">
           <p className="font-medium">Aucune demande pour le moment.</p>
           <p className="mt-1 text-sm">
-            <button onClick={() => navigate('/nouvelle-demande')} className="font-semibold text-primary-600 hover:underline">
+            <button onClick={openNewRequestModal} className="font-semibold text-primary-600 hover:underline">
               Faites votre première demande
             </button>{' '}
             et recevez des propositions d'ouvriers qualifiés.
