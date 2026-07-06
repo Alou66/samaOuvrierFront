@@ -4,6 +4,7 @@ import api from '../services/api'
 import { villeService } from '../services/ville.service'
 import { metierService } from '../services/metier.service'
 import VilleSelect from '../components/VilleSelect'
+import Avatar from '../components/Avatar'
 
 const LANGUAGES_OPTIONS = ['Wolof', 'Français', 'Anglais', 'Pulaar', 'Sérère', 'Mandingue', 'Diola']
 
@@ -149,12 +150,11 @@ export default function Account() {
       {/* En-tête */}
       <div className="mb-5 flex items-center gap-4">
         <div className="relative shrink-0">
-          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-xl font-bold text-primary-700">
-            {user.photoProfilUrl
-              ? <img src={user.photoProfilUrl} alt={user.nom} className="h-full w-full object-cover" />
-              : user.nom?.charAt(0).toUpperCase()
-            }
-          </div>
+          <Avatar
+            src={user.photoProfilUrl}
+            name={user.nom}
+            className="h-14 w-14 bg-primary-100 text-xl text-primary-700"
+          />
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}

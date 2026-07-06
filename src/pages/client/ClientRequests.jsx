@@ -227,7 +227,12 @@ export default function ClientRequests() {
 
   const suivreMission = (mission, worker) => {
     demarrerMissionDirecte({
-      worker: { id: mission.workerId, nom: worker?.nom ?? 'Ouvrier', metier: worker?.metier ?? '' },
+      worker: {
+        id: mission.workerId,
+        nom: worker?.nom ?? 'Ouvrier',
+        metier: worker?.metier ?? '',
+        photoProfil: worker?.photoProfil,
+      },
       metier: worker?.metier ?? '',
       ville:  worker?.ville ?? '',
       missionId: mission.id,
@@ -405,7 +410,7 @@ export default function ClientRequests() {
                     </p>
                     {mission.status === 'STARTED' && (
                       <button
-                        onClick={() => suivreMission(mission, { nom: 'Ouvrier', metier: d.metier, ville: d.ville })}
+                        onClick={() => suivreMission(mission, workerByRequest[d.id] ?? { nom: 'Ouvrier', metier: d.metier, ville: d.ville })}
                         className="shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
                       >
                         Suivre sur la carte

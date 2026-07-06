@@ -6,6 +6,7 @@ import {
   HomeIcon, ListIcon, UserIcon, SearchIcon,
   PlusIcon, DashboardIcon, LogOutIcon, ShieldIcon,
 } from './Icons'
+import Avatar from './Avatar'
 
 // ─── Config navigation par rôle ──────────────────────────────────────────────
 
@@ -118,9 +119,11 @@ function Sidebar({ user, navItems, onLogout, onLogin, onRegister, onNewRequest }
       {user && meta && (
         <div className="mx-3 mb-2 rounded-xl border border-stone-100 bg-stone-50 p-3">
           <div className="flex items-center gap-2.5">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${avatarBg}`}>
-              {user.nom?.charAt(0).toUpperCase() ?? '?'}
-            </div>
+            <Avatar
+              src={user.photoProfilUrl}
+              name={user.nom}
+              className={`h-9 w-9 text-sm ${avatarBg}`}
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-stone-900">{user.nom}</p>
               <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.badge}`}>
@@ -253,10 +256,10 @@ function MobileHeader({ user, onLogin, onRegister, onAvatarClick }) {
       {user ? (
         <button
           onClick={onAvatarClick}
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ring-2 ring-stone-100 transition hover:ring-primary-300 ${avatarBg}`}
+          className="rounded-full ring-2 ring-stone-100 transition hover:ring-primary-300"
           title="Mon compte"
         >
-          {user.nom?.charAt(0).toUpperCase() ?? '?'}
+          <Avatar src={user.photoProfilUrl} name={user.nom} className={`h-8 w-8 text-sm ${avatarBg}`} />
         </button>
       ) : (
         <div className="flex items-center gap-2">

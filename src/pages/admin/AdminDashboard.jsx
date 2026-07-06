@@ -8,6 +8,7 @@ import { ratingService } from '../../services/rating.service'
 import { villeService } from '../../services/ville.service'
 import { metierService } from '../../services/metier.service'
 import { fetchAllPages } from '../../services/pagination'
+import Avatar from '../../components/Avatar'
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
@@ -147,9 +148,11 @@ function WorkerModal({ worker, onClose, onUpdate }) {
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-white" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-stone-100 p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xl font-bold text-primary-600">
-              {worker.nom.charAt(0)}
-            </div>
+            <Avatar
+              src={worker.photoProfil}
+              name={worker.nom}
+              className="h-12 w-12 bg-primary-100 text-xl text-primary-600"
+            />
             <div>
               <h2 className="font-bold text-stone-900">{worker.nom}</h2>
               <p className="text-sm text-stone-500">
@@ -317,9 +320,11 @@ function ClientModal({ client, onClose, onUpdate }) {
       <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto rounded-2xl bg-white" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-stone-100 p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-100 text-lg font-bold text-primary-600">
-              {client.nom.charAt(0)}
-            </div>
+            <Avatar
+              src={client.photoProfilUrl}
+              name={client.nom}
+              className="h-11 w-11 bg-primary-100 text-lg text-primary-600"
+            />
             <div>
               <h2 className="font-bold text-stone-900">{client.nom}</h2>
               <p className="text-sm text-stone-500">Client · {client.ville ?? '—'}</p>
@@ -616,9 +621,11 @@ export default function AdminDashboard() {
             {pendingWorkers.map((w) => (
               <li key={w.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-3 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-sm font-bold text-yellow-700">
-                    {w.nom.charAt(0)}
-                  </div>
+                  <Avatar
+                    src={w.photoProfil}
+                    name={w.nom}
+                    className="h-9 w-9 bg-yellow-100 text-sm text-yellow-700"
+                  />
                   <div>
                     <p className="text-sm font-medium text-stone-900">{w.nom}</p>
                     <p className="text-xs text-stone-500">{w.metier} · {w.ville}</p>
@@ -699,7 +706,7 @@ export default function AdminDashboard() {
                   <tr key={w.id} className="border-b border-stone-50 hover:bg-stone-50">
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">{w.nom.charAt(0)}</div>
+                        <Avatar src={w.photoProfil} name={w.nom} className="h-8 w-8 bg-primary-100 text-sm text-primary-700" />
                         <div>
                           <p className="font-medium text-stone-900">{w.nom}</p>
                           <p className="text-xs text-stone-400">{w.email}</p>
@@ -767,7 +774,7 @@ export default function AdminDashboard() {
                   <tr key={c.id} className="border-b border-stone-50 hover:bg-stone-50">
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">{c.nom.charAt(0)}</div>
+                        <Avatar src={c.photoProfilUrl} name={c.nom} className="h-8 w-8 bg-primary-100 text-sm text-primary-700" />
                         <div>
                           <p className="font-medium text-stone-900">{c.nom}</p>
                           <p className="text-xs text-stone-400">{c.email}</p>

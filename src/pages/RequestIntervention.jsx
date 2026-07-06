@@ -5,6 +5,7 @@ import { requestService } from '../services/request.service'
 import { useAuth } from '../context/AuthContext'
 import Stars from '../components/Stars'
 import { CheckIcon } from '../components/Icons'
+import Avatar from '../components/Avatar'
 
 export default function RequestIntervention() {
   const { id } = useParams()
@@ -72,9 +73,11 @@ export default function RequestIntervention() {
     <div className="mx-auto max-w-lg">
       {/* Résumé de l'ouvrier cible */}
       <div className="mb-4 flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xl font-bold text-primary-600">
-          {worker.nom.charAt(0)}
-        </div>
+        <Avatar
+          src={worker.photoProfil}
+          name={worker.nom}
+          className="h-12 w-12 bg-primary-100 text-xl text-primary-600"
+        />
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-stone-900">{worker.nom}</p>
           <p className="text-sm text-stone-500">

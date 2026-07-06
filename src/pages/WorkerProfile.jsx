@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { workerService } from '../services/worker.service'
 import { ratingService } from '../services/rating.service'
 import Stars from '../components/Stars'
+import Avatar from '../components/Avatar'
 
 export default function WorkerProfile() {
   const { id } = useParams()
@@ -43,9 +44,11 @@ export default function WorkerProfile() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-5 sm:flex-row sm:items-center">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary-100 text-3xl font-bold text-primary-600">
-          {worker.nom.charAt(0)}
-        </div>
+        <Avatar
+          src={worker.photoProfil}
+          name={worker.nom}
+          className="h-20 w-20 bg-primary-100 text-3xl text-primary-600"
+        />
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-stone-900">{worker.nom}</h1>

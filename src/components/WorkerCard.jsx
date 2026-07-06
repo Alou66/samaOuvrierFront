@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Stars from './Stars'
+import Avatar from './Avatar'
 
 export default function WorkerCard({ worker }) {
   return (
@@ -7,9 +8,11 @@ export default function WorkerCard({ worker }) {
       to={`/ouvrier/${worker.id}`}
       className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center"
     >
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-100 text-2xl font-bold text-primary-600">
-        {worker.nom.charAt(0)}
-      </div>
+      <Avatar
+        src={worker.photoProfil}
+        name={worker.nom}
+        className="h-14 w-14 bg-primary-100 text-2xl text-primary-600"
+      />
 
       <div className="flex-1 text-left">
         <div className="flex items-center justify-between gap-2">

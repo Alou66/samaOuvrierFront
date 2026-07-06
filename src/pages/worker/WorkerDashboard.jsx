@@ -209,7 +209,7 @@ export default function WorkerDashboard() {
       await missionService.startMission(mission.id)
       const request = requestsById[mission.requestId]
       demarrerMissionDirecte({
-        worker: { id: moi.id, nom: moi.nom, metier: moi.workerProfile?.metier },
+        worker: { id: moi.id, nom: moi.nom, metier: moi.workerProfile?.metier, photoProfil: moi.photoProfilUrl },
         metier: moi.workerProfile?.metier,
         ville: request?.ville ?? moi.ville,
         missionId: mission.id,

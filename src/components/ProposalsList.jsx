@@ -4,6 +4,7 @@ import { requestService } from '../services/request.service'
 import { workerService } from '../services/worker.service'
 import { formatDuration, formatPrice } from '../utils/format'
 import Stars from './Stars'
+import Avatar from './Avatar'
 
 const BADGE = {
   PENDING:   'bg-yellow-100 text-yellow-700',
@@ -48,9 +49,11 @@ function WorkerProfileModal({ worker, onClose }) {
         {/* En-tête */}
         <div className="flex items-center justify-between border-b border-stone-100 p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xl font-bold text-primary-600">
-              {worker.nom.charAt(0)}
-            </div>
+            <Avatar
+              src={worker.photoProfil}
+              name={worker.nom}
+              className="h-12 w-12 bg-primary-100 text-xl text-primary-600"
+            />
             <div>
               <h2 className="font-bold text-stone-900">{worker.nom}</h2>
               <p className="text-sm text-stone-500">

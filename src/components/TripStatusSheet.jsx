@@ -3,6 +3,7 @@ import { useTrip } from '../context/TripContext'
 import { useAuth } from '../context/AuthContext'
 import { ratingService } from '../services/rating.service'
 import RatingModal from './RatingModal'
+import Avatar from './Avatar'
 
 /**
  * Sheet superposée à la carte (Home page) affichant le statut d'une mission suivie.
@@ -35,9 +36,11 @@ export default function TripStatusSheet() {
     <div className="absolute inset-x-0 bottom-0 z-[500] p-3">
       <div className="rounded-2xl border border-primary-100 bg-white p-4 shadow-lg">
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-lg font-bold text-primary-700">
-            {trip.worker?.nom?.charAt(0)}
-          </span>
+          <Avatar
+            src={trip.worker?.photoProfil}
+            name={trip.worker?.nom}
+            className="h-12 w-12 bg-primary-100 text-lg text-primary-700"
+          />
           <div className="flex-1">
             <p className="font-semibold text-stone-900">{trip.worker?.nom}</p>
             <p className="text-sm text-stone-500">{trip.worker?.metier}</p>
